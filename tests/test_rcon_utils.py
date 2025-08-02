@@ -1,6 +1,10 @@
 import pytest
 
-from fle.env.utils.rcon import _lua2python
+from fle.env.utils.rcon import (
+    LuaConversionError,
+    _check_output_for_errors,
+    _lua2python,
+)
 
 
 @pytest.fixture()
@@ -15,3 +19,11 @@ def test_lua_2_python():
     response, timing = _lua2python(command, lua_response)
 
     assert response == {"a": False, "b": "string global", 2: "]"}
+    assert timing >= 0
+
+
+def test_lua2python_error():
+    error_output = "Unexpected end of string while parsing Lua string."
+
+    with pytest.raises(LuaConversionError):
+        _check_output_for_errors("cmd", "resp", error_output)
