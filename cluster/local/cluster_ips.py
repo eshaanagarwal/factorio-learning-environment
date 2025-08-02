@@ -1,19 +1,38 @@
 import subprocess
 import json
-from typing import List
+from typing import List, Tuple
 
 
-def get_local_container_ips() -> List[str]:
-    """Get IP addresses of running Factorio containers in the local Docker setup."""
-    # Get container IDs for factorio containers
+def get_local_container_ips() -> Tuple[List[str], List[int], List[int]]:
+    """Return IP addresses and ports of running Factorio Docker containers.
+
+    Returns
+    -------
+    Tuple[List[str], List[int], List[int]]
+        A tuple containing lists of IP addresses, UDP ports and TCP ports.
+        If Docker is not available or no containers are running, the lists
+        will all be empty.
+    """
+
+    # Get container IDs for Factorio containers
     cmd = ['docker', 'ps', '--filter', 'name=factorio_', '--format', '"{{.ID}}"']
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    except FileNotFoundError:
+        # Docker binary not found in PATH
+        print("Docker executable not found. Is Docker installed?")
+        return [], [], []
+    except subprocess.CalledProcessError:
+        # `docker ps` failed for some reason
+        print("Failed to query Docker for running containers")
+        return [], [], []
+
     container_ids = result.stdout.strip().split('\n')
-    container_ids = [id.strip('"') for id in container_ids]
+    container_ids = [cid.strip('"') for cid in container_ids]
 
     if not container_ids or container_ids[0] == '':
         print("No running Factorio containers found")
-        return []
+        return [], [], []
 
     ips = []
     udp_ports = []
